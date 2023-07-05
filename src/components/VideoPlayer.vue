@@ -4,7 +4,10 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { throttle } from 'lodash-es'
 import '@/lib/aliplayercomponents-1.0.9.min.js'
+
+const emit = defineEmits(['ready', 'timeupdate', 'end'])
 onMounted(() => {
   //init script
   initPlayerSdkStyle()
@@ -67,6 +70,23 @@ const initPlayerSdk = () => {
     },
     (player) => {
       console.log('The player is created.')
+      player.on('ready', function () {
+        // //静音播放
+        // player.mute()
+        // player.replay()
+        emit('ready', player.getDuration())
+        console.log('ready', player.getDuration())
+      })
+      player.on(
+        'timeupdate',
+        throttle(function () {
+          emit('timeupdate')
+        }, 150)
+      )
+      player.on('ended', function () {
+        // player.replay()
+        emit('end')
+      })
     }
   )
   //used for debug mode
@@ -76,8 +96,10 @@ const seek = (time) => player.value.seek(time)
 const getCurrentTime = () => player.value.getCurrentTime()
 const getDuration = () => player.value.getDuration()
 const pause = () => player.value.pause()
+const play = () => player.value.play()
+const getStatus = () => player.value.getStatus()
+defineExpose({ seek, pause, play, getCurrentTime, getDuration, getStatus })
 
-defineExpose({ seek, pause, getCurrentTime, getDuration })
 const initPlayerSdkScript = () => {
   const script = document.createElement('script')
   script.setAttribute('charset', 'utf-8')
@@ -85,7 +107,6 @@ const initPlayerSdkScript = () => {
   script.setAttribute('src', 'https://g.alicdn.com/de/prismplayer/2.15.2/aliplayer-h5-min.js')
   document.body.appendChild(script)
   script.addEventListener('load', () => {
-    console.log('player sdk loaded')
     initPlayerSdk()
   })
 }
